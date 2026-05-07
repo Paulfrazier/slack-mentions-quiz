@@ -101,37 +101,38 @@
       justify-content: space-between;
       align-items: baseline;
       margin: 40px 0 12px;
+      gap: 12px;
     }
     .quiz-header h2 { margin: 0; }
-    .score {
-      font-size: 14px;
+    .progress {
+      font-size: 13px;
       color: var(--muted);
       font-variant-numeric: tabular-nums;
+      text-align: right;
+    }
+    .progress-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+    .progress-bar > div {
+      height: 100%;
+      background: var(--slack-purple);
+      transition: width 0.3s;
     }
 
     .scenario {
       background: var(--card);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 18px;
-      margin-bottom: 14px;
+      padding: 22px 20px;
     }
     .scenario .q {
-      font-size: 15px;
-      margin: 0 0 14px;
-    }
-    .scenario .q .num {
-      display: inline-block;
-      background: var(--slack-purple);
-      color: white;
-      border-radius: 999px;
-      width: 22px;
-      height: 22px;
-      line-height: 22px;
-      text-align: center;
-      font-size: 12px;
-      margin-right: 8px;
-      font-weight: 600;
+      font-size: 17px;
+      margin: 0 0 18px;
+      line-height: 1.45;
     }
 
     .choices {
@@ -141,7 +142,7 @@
     }
     .choices button {
       flex: 1 1 auto;
-      padding: 10px 14px;
+      padding: 12px 14px;
       border: 1px solid var(--border);
       background: white;
       border-radius: 6px;
@@ -201,10 +202,13 @@
       margin-right: 4px;
     }
 
-    .restart {
-      display: none;
-      margin: 24px auto 0;
-      padding: 10px 20px;
+    .nav {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 14px;
+    }
+    .nav button {
+      padding: 10px 22px;
       background: var(--slack-purple);
       color: white;
       border: 0;
@@ -213,8 +217,57 @@
       font-family: inherit;
       cursor: pointer;
     }
-    .restart:hover { background: var(--slack-purple-light); }
-    .restart.show { display: block; }
+    .nav button:hover { background: var(--slack-purple-light); }
+
+    .summary {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 28px 22px;
+      text-align: center;
+    }
+    .summary h3 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      color: var(--slack-purple);
+    }
+    .summary .final-score {
+      font-size: 18px;
+      color: var(--text);
+      margin: 0 0 12px;
+    }
+    .summary .breakdown {
+      font-size: 14px;
+      color: var(--muted);
+      margin: 0 0 22px;
+    }
+    .summary button {
+      padding: 10px 22px;
+      background: var(--slack-purple);
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .summary button:hover { background: var(--slack-purple-light); }
+
+    .submit-cta {
+      margin-top: 14px;
+      padding: 14px 16px;
+      background: #f5f0f6;
+      border: 1px dashed #c9b3ce;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .submit-cta a {
+      color: var(--slack-purple);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .submit-cta a:hover { text-decoration: underline; }
 
     .takeaways ul {
       padding-left: 20px;
@@ -228,6 +281,7 @@
       color: var(--muted);
       text-align: center;
     }
+    footer a { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -252,14 +306,17 @@
 
     <div class="quiz-header">
       <h2>Quiz: which would you use?</h2>
-      <div class="score" id="score">0 of 0</div>
+      <div class="progress" id="progress">—</div>
     </div>
+    <div class="progress-bar"><div id="progress-fill" style="width:0%"></div></div>
 
     <div id="quiz"></div>
 
-    <button class="restart" id="restart">Restart quiz</button>
+    <div class="submit-cta">
+      Got a good scenario? <a href="https://github.com/Paulfrazier/slack-mentions-quiz/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Submit one as a PR →</a>
+    </div>
 
-    <h2 class="takeaways-h">Takeaways</h2>
+    <h2>Takeaways</h2>
     <div class="takeaways">
       <ul>
         <li>If it matters, use <code>@channel</code> — async readers deserve the info too.</li>
@@ -268,132 +325,485 @@
       </ul>
     </div>
 
-    <footer>A tiny educational app. No tracking, no backend, just one HTML file.</footer>
+    <footer>
+      A tiny educational app. <a href="https://github.com/Paulfrazier/slack-mentions-quiz" target="_blank" rel="noopener">Source on GitHub</a>.
+    </footer>
   </main>
 
   <script>
     const SCENARIOS = [
+      // ─── @channel: needs everyone, including async readers ───
       {
-        q: "The deploy pipeline is broken and all PRs are blocked. You need to tell the engineering channel.",
+        q: "The deploy pipeline is broken and all PRs are blocked.",
         correct: "channel",
         why: {
-          channel: "Right call. This affects everyone, including teammates who are heads-down or AFK — they need to know before they push their next branch.",
-          here: "Tempting, but anyone AFK right now will come back, push a PR, and immediately hit the wall you just warned about. Use @channel.",
-          none: "This blocks the whole team's day. It deserves a ping — @channel is the right one."
+          channel: "Right call. This affects everyone, including teammates AFK who'll come back and try to push.",
+          here: "The teammate AFK now will return, push a PR, and immediately hit the wall you just warned about. Use @channel.",
+          none: "This blocks the whole team's day — it deserves a ping. @channel."
         }
       },
       {
-        q: "The weekly all-hands meeting starts in 5 minutes. You're posting in #general.",
+        q: "The weekly all-hands meeting starts in 5 minutes.",
         correct: "channel",
         why: {
-          channel: "Yes. People who stepped away to grab coffee still need to come back for the meeting — they're not 'gone,' just briefly idle.",
-          here: "Slack's 'active' status is fragile — someone who locked their laptop two minutes ago is 'away' and will miss this. @channel catches them.",
+          channel: "Yes — people who stepped away for coffee aren't 'gone,' just briefly idle. They still need to come back for the meeting.",
+          here: "Slack 'active' is fragile — anyone who locked their laptop two minutes ago is 'away' and will miss this. @channel.",
           none: "A 5-minute warning is the whole point of the ping. @channel."
         }
       },
       {
-        q: "The office is closing early due to a snowstorm — everyone should head home now.",
+        q: "Office is closing early due to a snowstorm — everyone should head home now.",
         correct: "channel",
         why: {
-          channel: "Correct. This is safety + logistics. Even people who are AFK right now will want to see this before they commute.",
+          channel: "Right. Safety + logistics. Even people AFK now will want to see this before they commute.",
           here: "@here means the person who left their desk an hour ago doesn't get the message and walks into a closed office. Use @channel.",
-          none: "Weather + safety info needs everyone to see it, full stop. @channel."
+          none: "Weather + safety needs everyone, full stop. @channel."
         }
       },
       {
         q: "Announcing a new company-wide PTO policy that takes effect next month.",
         correct: "channel",
         why: {
-          channel: "Right. Everyone needs to read this, and nothing about it is real-time. Async readers matter most here.",
-          here: "Classic @here mistake. The colleague at lunch comes back, sees nothing, and is blindsided by the new policy in three weeks. Use @channel.",
-          none: "Policy changes need an announcement people can search for later. Use @channel."
-        }
-      },
-      {
-        q: "Production is down. You need an on-call SRE to jump into this thread within the next minute to debug.",
-        correct: "here",
-        why: {
-          here: "Correct — this is the narrow case @here was made for. Only someone online <em>right now</em> can help in the next 60 seconds; pinging the whole team adds noise without helping.",
-          channel: "Defensible, and many teams would do this. But pinging everyone — including people asleep or on PTO — adds noise when only currently-online responders can help. @here is the cleaner fit.",
-          none: "Production is on fire. You need a human in this thread immediately. Ping someone."
+          channel: "Right. Everyone needs to read this, and nothing is real-time about it. Async readers matter most.",
+          here: "Classic @here mistake. The colleague at lunch comes back, sees nothing, and is blindsided by the policy in three weeks. Use @channel.",
+          none: "Policy changes need an announcement people can search for later. @channel."
         }
       },
       {
         q: "\"Heads up: I'm pushing a hotfix to main in 2 minutes — speak now if you object.\"",
         correct: "channel",
         why: {
-          channel: "Right. This is the most common @here trap. Code-owners who are at lunch still own the code you're about to touch — they deserve a chance to object before, not a surprise after.",
-          here: "Feels right, but the teammate AFK for 20 minutes comes back to find their module rewritten. Give everyone a real chance to object — use @channel.",
+          channel: "Right. Code-owners at lunch still own the code you're about to touch — they deserve a chance to object before, not a surprise after.",
+          here: "Feels right, but the teammate AFK for 20 minutes comes back to find their module rewritten. Give everyone a real chance to object — @channel.",
           none: "You're modifying shared code without warning. At minimum, @channel."
+        }
+      },
+      {
+        q: "New CEO will be announced at the company meeting at 3pm tomorrow.",
+        correct: "channel",
+        why: {
+          channel: "Right — major news, everyone needs to see it before tomorrow regardless of when they happen to be online today.",
+          here: "Half the company misses the heads-up and is surprised in real time. @channel.",
+          none: "This is news that genuinely warrants pinging everyone."
+        }
+      },
+      {
+        q: "Open enrollment for benefits closes Friday — sign up if you haven't.",
+        correct: "channel",
+        why: {
+          channel: "Right. Deadlines that affect everyone need to be seen by everyone, even the person on PTO this week.",
+          here: "The teammate at the dentist misses it, blows past the deadline, has no benefits next year. @channel.",
+          none: "Missing this has real consequences for individuals — it's worth the ping. @channel."
+        }
+      },
+      {
+        q: "Q4 OKRs have been published — please review your team's.",
+        correct: "channel",
+        why: {
+          channel: "Right. Everyone in the channel owns OKRs; everyone needs to read them, async is fine.",
+          here: "OKR review isn't a real-time activity — there's no reason to filter to people online right now. @channel.",
+          none: "It's an action item for everyone, not just FYI. @channel."
+        }
+      },
+      {
+        q: "Fire drill at 2pm sharp — clear the building when the alarm sounds.",
+        correct: "channel",
+        why: {
+          channel: "Right. Safety. The person currently in a meeting room (and Slack-away) absolutely needs to know.",
+          here: "Half the office misses the drill, the floor warden gets a headcount mismatch, real fire risk hides in the noise. @channel.",
+          none: "Fire safety announcements ping everyone. @channel."
+        }
+      },
+      {
+        q: "Office Wi-Fi maintenance Sunday 8pm to midnight — plan around it.",
+        correct: "channel",
+        why: {
+          channel: "Right. Affects everyone who works late or weekends; needs to be searchable later.",
+          here: "Sunday-night-Slack is a tiny audience — most people will see this Monday. @channel.",
+          none: "Worth telling everyone so no one is surprised. @channel."
+        }
+      },
+      {
+        q: "Sunsetting the staging environment Friday — migrate any tests or scripts that depend on it.",
+        correct: "channel",
+        why: {
+          channel: "Right. Any engineer in the channel might have a script pointed at staging. They all need a heads-up before Friday.",
+          here: "The script someone wrote 6 months ago is breaking either way; whether they see your @here doesn't change that. @channel.",
+          none: "This will break things if people don't act. @channel."
+        }
+      },
+      {
+        q: "Team retreat dates locked: Oct 14–17. Please block your calendars.",
+        correct: "channel",
+        why: {
+          channel: "Right. Calendar conflicts compound — everyone needs to see this and act.",
+          here: "The person AFK now misses it, double-books a vacation, and has to cancel. @channel.",
+          none: "Action item for every team member. @channel."
+        }
+      },
+      {
+        q: "Code freeze starts Monday at 5pm — get your PRs in before then.",
+        correct: "channel",
+        why: {
+          channel: "Right. Anyone with an in-flight PR needs this even if they're heads-down right now.",
+          here: "The engineer who's been deep in a feature for two days is exactly the one most likely to miss an @here. @channel.",
+          none: "It's a deadline that affects merging — every engineer needs the heads-up. @channel."
+        }
+      },
+      {
+        q: "Security incident: rotate your auth tokens by end of day today.",
+        correct: "channel",
+        why: {
+          channel: "Right. Every account holder is at risk. Everyone needs the message regardless of when they next check Slack.",
+          here: "@here misses anyone AFK, and AFK accounts are exactly the ones still using the compromised token. @channel.",
+          none: "Security incidents always warrant the broadest possible ping. @channel."
+        }
+      },
+      {
+        q: "Office is moving to a new building on Aug 1 — update your commute plans.",
+        correct: "channel",
+        why: {
+          channel: "Right. Logistics affecting every employee, with a deadline. @channel is the considerate choice.",
+          here: "Half the company moves to the wrong building on Aug 1. @channel.",
+          none: "Major logistics change. @channel."
+        }
+      },
+      {
+        q: "Renaming the repo from 'old-app' to 'new-app' on Friday — update your remotes by then.",
+        correct: "channel",
+        why: {
+          channel: "Right. Everyone with a clone needs to act. Async readers matter most here.",
+          here: "The engineer on PTO comes back Monday to broken git remotes and no context. @channel.",
+          none: "It will break local checkouts for anyone who doesn't update. @channel."
+        }
+      },
+      {
+        q: "Self-assessments for performance reviews are due next Wednesday.",
+        correct: "channel",
+        why: {
+          channel: "Right. Everyone owes one; not real-time; deserves to be searchable later.",
+          here: "The person traveling for a conference misses it, files late, looks bad. @channel.",
+          none: "Personal deadline for every team member. @channel."
+        }
+      },
+      {
+        q: "Updated incident-response runbook is in Notion — read it before your next on-call shift.",
+        correct: "channel",
+        why: {
+          channel: "Right. Everyone in the rotation needs to know, and 'before your next shift' is async by definition.",
+          here: "On-call rotates — the person currently AFK is on shift next. @channel.",
+          none: "It's a required read for an existing responsibility. Worth the ping. @channel."
+        }
+      },
+      {
+        q: "Upgrading Node to v20 across the codebase — local dev will need a reinstall after Friday.",
+        correct: "channel",
+        why: {
+          channel: "Right. Every engineer's local env breaks otherwise. Deserves the broad notice.",
+          here: "Whoever is at lunch comes back Monday to red errors and no idea why. @channel.",
+          none: "It'll break local dev for everyone. @channel."
+        }
+      },
+      {
+        q: "Holiday party RSVP closes Thursday at noon.",
+        correct: "channel",
+        why: {
+          channel: "Right. Fun for the team; it's social, but the deadline still affects everyone.",
+          here: "Half the team forgets to RSVP. @channel — keep it light, keep it everyone.",
+          none: "Deadlines benefit from a ping; this one's gentle. @channel."
+        }
+      },
+      {
+        q: "Health insurance enrollment portal will be down for 4 hours Saturday morning.",
+        correct: "channel",
+        why: {
+          channel: "Right. Anyone planning to enroll Saturday should reschedule. Worth the broad heads-up.",
+          here: "Saturday-morning Slack is a tiny audience. Most people will see this Friday or Monday. @channel.",
+          none: "Specific impact, specific window — worth a ping. @channel."
+        }
+      },
+      {
+        q: "Email migration to a new domain next week — old addresses will start bouncing.",
+        correct: "channel",
+        why: {
+          channel: "Right. Every employee's external contacts need to be updated. Async readers matter most.",
+          here: "The salesperson AFK at a client meeting is exactly the one whose contacts will bounce hardest. @channel.",
+          none: "Mass impact, action required. @channel."
+        }
+      },
+      {
+        q: "Required compliance training is due by end of month.",
+        correct: "channel",
+        why: {
+          channel: "Right. Everyone owes it; missing it has consequences (audits, etc.). Worth the ping.",
+          here: "The person on PTO misses it, blows the deadline, gets escalated. @channel.",
+          none: "Required action with consequences = worth a ping. @channel."
+        }
+      },
+      {
+        q: "Reorg announcement — please read the email and reach out to your manager with questions.",
+        correct: "channel",
+        why: {
+          channel: "Right. Major change; nothing is real-time. Async readers matter most.",
+          here: "Reorg + half the team finds out a day late = avoidable anxiety. @channel.",
+          none: "Reorgs warrant clear, broad communication. @channel."
+        }
+      },
+      {
+        q: "Building power outage scheduled Tuesday 2am — services will be down briefly.",
+        correct: "channel",
+        why: {
+          channel: "Right. On-call needs to plan. Anyone running batch jobs needs to plan. @channel.",
+          here: "Late-night audience is small; the morning team misses it and pages on a 'down' service. @channel.",
+          none: "Affects services and people at multiple times. @channel."
+        }
+      },
+      {
+        q: "Deprecating the /v1/users API on Sept 1 — switch to /v2 before then.",
+        correct: "channel",
+        why: {
+          channel: "Right. Any service in the channel might still call /v1. Everyone needs the heads-up.",
+          here: "The owner of a quiet downstream service is exactly the one most likely to miss it. @channel.",
+          none: "It will break consumers if they don't act. @channel."
+        }
+      },
+      {
+        q: "VPN cert expiring Friday — install the new one before then or you'll lose access.",
+        correct: "channel",
+        why: {
+          channel: "Right. Affects every engineer with VPN access; missing it locks them out. @channel.",
+          here: "Whoever is AFK now is locked out Monday. @channel.",
+          none: "Hard deadline with hard consequences. @channel."
+        }
+      },
+      {
+        q: "Team OKR review pushed from 3pm to 4pm tomorrow.",
+        correct: "channel",
+        why: {
+          channel: "Right. Everyone with that meeting on their calendar needs the update — including those AFK now who'll plan around it later.",
+          here: "Half the team shows up at 3pm to an empty room. @channel.",
+          none: "Schedule changes need everyone affected to see them. @channel."
+        }
+      },
+
+      // ─── @here: real-time, ephemeral, only useful to people online right now ───
+      {
+        q: "Production is down. Need an on-call SRE in this thread within the next minute to debug.",
+        correct: "here",
+        why: {
+          here: "Correct — only someone online <em>right now</em> can help in 60 seconds. Pinging the whole company adds noise without helping.",
+          channel: "Defensible, but pinging people asleep or on PTO won't help in the next 60 seconds. @here is the cleaner fit.",
+          none: "Production is on fire. You need a human in this thread immediately."
+        }
+      },
+      {
+        q: "Conference room presenter equipment just died and a meeting is starting — can someone bring an HDMI cable from their desk?",
+        correct: "here",
+        why: {
+          here: "Correct — only people physically in the office <em>right now</em> can help. Anyone remote or AFK is irrelevant.",
+          channel: "The remote teammate in another time zone can't help with an HDMI cable. @here.",
+          none: "You need someone to act in 60 seconds. Ping someone."
+        }
+      },
+      {
+        q: "\"Whoever just deployed to staging — can you roll back? You broke the demo.\"",
+        correct: "here",
+        why: {
+          here: "Correct — you need the deployer specifically, and they're definitely online (they just pushed). Real-time, narrow.",
+          channel: "Way overkill. The deployer is online; the rest of the company doesn't need this. @here.",
+          none: "Demo is breaking. You need the deployer to act now."
+        }
+      },
+      {
+        q: "Quick sanity check — anyone seeing the build pass on main right now?",
+        correct: "here",
+        why: {
+          here: "Correct — you only care about people who can check <em>right now</em>. Anyone offline can't help in this moment.",
+          channel: "Pinging everyone for a 30-second sanity check is noisy. @here.",
+          none: "You're asking a question. A small ping is fine."
+        }
+      },
+      {
+        q: "Need a second pair of eyes on a tricky bug for the next 10 minutes — anyone free?",
+        correct: "here",
+        why: {
+          here: "Correct — only currently-online people can help in the next 10 minutes. Narrow, real-time.",
+          channel: "You don't need to wake people up; you just need someone awake. @here.",
+          none: "You're asking for help. A small ping is fine."
+        }
+      },
+      {
+        q: "Live customer call in 5 minutes — the demo env just crashed. Who can spin up a fresh one?",
+        correct: "here",
+        why: {
+          here: "Correct — only someone with hands on the keyboard <em>right now</em> can help in 5 minutes. Real-time emergency.",
+          channel: "You don't need everyone — you need anyone available now. @here.",
+          none: "Customer call is in 5 minutes. Ping someone."
+        }
+      },
+
+      // ─── Don't @ anyone: FYI / casual / no-one-needs-to-act ───
+      {
+        q: "\"Anyone want to grab lunch?\"",
+        correct: "none",
+        why: {
+          none: "Right. Casual social ask — interested people will see it; no one needs an interrupt.",
+          here: "Pinging for lunch interrupts everyone for a soft social ask. Just post the message.",
+          channel: "Pinging the whole channel for lunch is the canonical Slack-etiquette villain. Don't."
+        }
+      },
+      {
+        q: "\"Just shipped a small refactor to the search service, FYI.\"",
+        correct: "none",
+        why: {
+          none: "Right. FYI of a small change — interested folks will read it; no one needs to drop what they're doing.",
+          here: "There's no action required, no real-time element. Don't ping for FYI. Just post.",
+          channel: "Pinging everyone for an internal FYI is exactly the noise that makes people mute channels. Don't."
+        }
+      },
+      {
+        q: "\"Happy Friday everyone! 🎉\"",
+        correct: "none",
+        why: {
+          none: "Right. Vibes. No one needs a notification for vibes.",
+          here: "Pinging people for a 'Happy Friday' is what makes people leave channels. Just post.",
+          channel: "Hard no. The fastest way to teach a team to mute a channel is @channel-ing 'Happy Friday.' Just post."
+        }
+      },
+      {
+        q: "\"Pro tip: VS Code has a built-in JSON formatter (Cmd+Shift+P → 'Format Document').\"",
+        correct: "none",
+        why: {
+          none: "Right. A nice tip for whoever sees it. No one needs an interrupt for it.",
+          here: "There's no urgency; nothing breaks if people miss it. Just post.",
+          channel: "Pro tips are nice — interrupting everyone for them is not. Just post."
+        }
+      },
+      {
+        q: "\"Sharing this article I read about distributed systems — interesting take on consistency models.\"",
+        correct: "none",
+        why: {
+          none: "Right. Sharing for the curious. No one needs to drop their work to read an article.",
+          here: "Pinging for an article is the kind of thing that trains people to ignore your pings. Don't.",
+          channel: "Pinging everyone for someone's reading list is exactly the noise to avoid. Just post."
+        }
+      },
+      {
+        q: "\"I'm OOO tomorrow afternoon for a doctor's appointment.\"",
+        correct: "none",
+        why: {
+          none: "Right. Status update; people who interact with you will see it. No one needs an interrupt.",
+          here: "Status updates don't need pings — they need to be findable, which a normal post is.",
+          channel: "Pinging the whole channel for one person's afternoon OOO is over-broadcast. Just post."
         }
       }
     ];
 
-    const LABEL = { here: "@here", channel: "@channel", none: "Don't @ anyone" };
-
     const quizEl = document.getElementById("quiz");
-    const scoreEl = document.getElementById("score");
-    const restartBtn = document.getElementById("restart");
+    const progressEl = document.getElementById("progress");
+    const progressFill = document.getElementById("progress-fill");
 
-    let answered = 0;
+    let order = [];
+    let idx = 0;
     let correct = 0;
+    let byCorrect = { here: 0, channel: 0, none: 0 };
 
-    function render() {
-      quizEl.innerHTML = "";
-      answered = 0;
-      correct = 0;
-      updateScore();
-      restartBtn.classList.remove("show");
-
-      SCENARIOS.forEach((s, i) => {
-        const card = document.createElement("div");
-        card.className = "scenario";
-        card.innerHTML = `
-          <p class="q"><span class="num">${i + 1}</span>${escapeHtml(s.q)}</p>
-          <div class="choices">
-            <button data-choice="here">@here</button>
-            <button data-choice="channel">@channel</button>
-            <button data-choice="none">Don't @ anyone</button>
-          </div>
-          <div class="feedback"></div>
-        `;
-        const buttons = card.querySelectorAll(".choices button");
-        const feedback = card.querySelector(".feedback");
-
-        buttons.forEach(btn => {
-          btn.addEventListener("click", () => {
-            const choice = btn.dataset.choice;
-            const isRight = choice === s.correct;
-
-            buttons.forEach(b => b.disabled = true);
-
-            if (isRight) {
-              btn.classList.add("correct");
-            } else {
-              btn.classList.add("wrong");
-              const rightBtn = card.querySelector(`button[data-choice="${s.correct}"]`);
-              rightBtn.classList.add("also-correct");
-            }
-
-            feedback.classList.add("show", isRight ? "right" : "wrong");
-            feedback.innerHTML = `<span class="verdict">${isRight ? "✓ Correct." : "✗ Not quite."}</span>${s.why[choice]}`;
-
-            answered++;
-            if (isRight) correct++;
-            updateScore();
-
-            if (answered === SCENARIOS.length) {
-              restartBtn.classList.add("show");
-            }
-          });
-        });
-
-        quizEl.appendChild(card);
-      });
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
     }
 
-    function updateScore() {
-      scoreEl.textContent = `${correct} of ${answered}${answered === SCENARIOS.length ? " — done!" : ""}`;
+    function startQuiz() {
+      order = shuffle([...Array(SCENARIOS.length).keys()]);
+      idx = 0;
+      correct = 0;
+      byCorrect = { here: 0, channel: 0, none: 0 };
+      renderQuestion();
+    }
+
+    function updateProgress() {
+      const total = SCENARIOS.length;
+      progressEl.textContent = `Question ${idx + 1} of ${total} · ${correct} correct so far`;
+      progressFill.style.width = `${(idx / total) * 100}%`;
+    }
+
+    function renderQuestion() {
+      updateProgress();
+      const s = SCENARIOS[order[idx]];
+      const card = document.createElement("div");
+      card.className = "scenario";
+      const nextLabel = idx === SCENARIOS.length - 1 ? "See results →" : "Next →";
+      card.innerHTML = `
+        <p class="q">${escapeHtml(s.q)}</p>
+        <div class="choices">
+          <button data-choice="here">@here</button>
+          <button data-choice="channel">@channel</button>
+          <button data-choice="none">Don't @ anyone</button>
+        </div>
+        <div class="feedback"></div>
+        <div class="nav" style="display:none"><button id="next-btn">${nextLabel}</button></div>
+      `;
+      const buttons = card.querySelectorAll(".choices button");
+      const feedback = card.querySelector(".feedback");
+      const nav = card.querySelector(".nav");
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const choice = btn.dataset.choice;
+          const isRight = choice === s.correct;
+
+          buttons.forEach(b => b.disabled = true);
+
+          if (isRight) {
+            btn.classList.add("correct");
+            correct++;
+            byCorrect[s.correct]++;
+          } else {
+            btn.classList.add("wrong");
+            const rightBtn = card.querySelector(`button[data-choice="${s.correct}"]`);
+            rightBtn.classList.add("also-correct");
+          }
+
+          feedback.classList.add("show", isRight ? "right" : "wrong");
+          feedback.innerHTML = `<span class="verdict">${isRight ? "✓ Correct." : "✗ Not quite."}</span>${s.why[choice]}`;
+          nav.style.display = "flex";
+          updateProgress();
+        });
+      });
+
+      card.querySelector("#next-btn").addEventListener("click", () => {
+        idx++;
+        if (idx >= SCENARIOS.length) {
+          renderSummary();
+        } else {
+          renderQuestion();
+          window.scrollTo({ top: document.querySelector(".quiz-header").offsetTop - 20, behavior: "smooth" });
+        }
+      });
+
+      quizEl.replaceChildren(card);
+    }
+
+    function renderSummary() {
+      progressEl.textContent = `Done · ${correct} of ${SCENARIOS.length}`;
+      progressFill.style.width = "100%";
+      const card = document.createElement("div");
+      card.className = "summary";
+      const pct = Math.round((correct / SCENARIOS.length) * 100);
+      card.innerHTML = `
+        <h3>${pct}%</h3>
+        <p class="final-score">You got <strong>${correct}</strong> of ${SCENARIOS.length} right.</p>
+        <p class="breakdown">Correct on @channel: ${byCorrect.channel} · @here: ${byCorrect.here} · don't-@: ${byCorrect.none}</p>
+        <button id="restart-btn">Restart quiz</button>
+      `;
+      card.querySelector("#restart-btn").addEventListener("click", () => {
+        startQuiz();
+        window.scrollTo({ top: document.querySelector(".quiz-header").offsetTop - 20, behavior: "smooth" });
+      });
+      quizEl.replaceChildren(card);
     }
 
     function escapeHtml(s) {
@@ -402,12 +812,7 @@
       })[c]);
     }
 
-    restartBtn.addEventListener("click", () => {
-      render();
-      window.scrollTo({ top: document.querySelector(".quiz-header").offsetTop - 20, behavior: "smooth" });
-    });
-
-    render();
+    startQuiz();
   </script>
 </body>
 </html>

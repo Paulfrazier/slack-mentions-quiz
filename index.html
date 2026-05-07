@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>@here vs @channel — when to use which</title>
+  <style>
+    :root {
+      --slack-purple: #4A154B;
+      --slack-purple-light: #611f64;
+      --here-yellow: #ECB22E;
+      --here-yellow-dark: #c8951f;
+      --green: #2BAC76;
+      --red: #d63b3b;
+      --bg: #fafafa;
+      --card: #ffffff;
+      --text: #1d1c1d;
+      --muted: #696969;
+      --border: #e6e6e6;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+
+    h1 {
+      font-size: 32px;
+      margin: 0 0 8px;
+      color: var(--slack-purple);
+      letter-spacing: -0.01em;
+    }
+
+    .thesis {
+      font-size: 18px;
+      color: var(--muted);
+      margin: 0 0 32px;
+    }
+
+    h2 {
+      font-size: 20px;
+      margin: 40px 0 16px;
+      color: var(--slack-purple);
+    }
+
+    code {
+      background: #f1f1f1;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.92em;
+    }
+
+    .explainer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 540px) {
+      .explainer { grid-template-columns: 1fr; }
+    }
+
+    .def {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+    .def h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+    .def.here h3 { color: var(--here-yellow-dark); }
+    .def.channel h3 { color: var(--slack-purple); }
+    .def p { margin: 0; color: var(--muted); font-size: 14px; }
+
+    .trap {
+      background: #fff8e1;
+      border: 1px solid #f0d77a;
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 14px;
+    }
+    .trap strong { color: var(--here-yellow-dark); }
+
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 40px 0 12px;
+    }
+    .quiz-header h2 { margin: 0; }
+    .score {
+      font-size: 14px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .scenario {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .scenario .q {
+      font-size: 15px;
+      margin: 0 0 14px;
+    }
+    .scenario .q .num {
+      display: inline-block;
+      background: var(--slack-purple);
+      color: white;
+      border-radius: 999px;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      font-size: 12px;
+      margin-right: 8px;
+      font-weight: 600;
+    }
+
+    .choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .choices button {
+      flex: 1 1 auto;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      background: white;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.05s, background 0.15s, border-color 0.15s;
+    }
+    .choices button:hover:not(:disabled) {
+      border-color: var(--slack-purple);
+    }
+    .choices button:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+    .choices button[data-choice="here"] { color: var(--here-yellow-dark); }
+    .choices button[data-choice="channel"] { color: var(--slack-purple); }
+    .choices button[data-choice="none"] { color: var(--muted); }
+
+    .choices button.correct {
+      background: var(--green);
+      color: white !important;
+      border-color: var(--green);
+    }
+    .choices button.wrong {
+      background: var(--red);
+      color: white !important;
+      border-color: var(--red);
+    }
+    .choices button.also-correct {
+      border-color: var(--green);
+      background: #eafaf2;
+      color: var(--green) !important;
+    }
+    .choices button:disabled {
+      cursor: not-allowed;
+      opacity: 0.85;
+    }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback.right {
+      background: #eafaf2;
+      border-left: 3px solid var(--green);
+    }
+    .feedback.wrong {
+      background: #fdecec;
+      border-left: 3px solid var(--red);
+    }
+    .feedback .verdict {
+      font-weight: 600;
+      margin-right: 4px;
+    }
+
+    .restart {
+      display: none;
+      margin: 24px auto 0;
+      padding: 10px 20px;
+      background: var(--slack-purple);
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .restart:hover { background: var(--slack-purple-light); }
+    .restart.show { display: block; }
+
+    .takeaways ul {
+      padding-left: 20px;
+      color: var(--text);
+    }
+    .takeaways li { margin-bottom: 8px; }
+
+    footer {
+      margin-top: 48px;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>@here vs @channel</h1>
+    <p class="thesis"><code>@here</code> feels polite. It usually isn't. Here's when to reach for <code>@channel</code> instead.</p>
+
+    <h2>The 30-second explainer</h2>
+    <div class="explainer">
+      <div class="def here">
+        <h3>@here</h3>
+        <p>Pings only people <em>currently active</em> in the channel. Everyone else misses it entirely.</p>
+      </div>
+      <div class="def channel">
+        <h3>@channel</h3>
+        <p>Pings every member of the channel. They'll see it whenever they next open Slack.</p>
+      </div>
+    </div>
+    <div class="trap">
+      <strong>The trap:</strong> <code>@here</code> feels considerate, but it creates <em>information asymmetry</em> — a random subset of the team gets the message and the rest don't, and you can't predict which is which. For most announcements, that's worse than just pinging everyone.
+    </div>
+
+    <div class="quiz-header">
+      <h2>Quiz: which would you use?</h2>
+      <div class="score" id="score">0 of 0</div>
+    </div>
+
+    <div id="quiz"></div>
+
+    <button class="restart" id="restart">Restart quiz</button>
+
+    <h2 class="takeaways-h">Takeaways</h2>
+    <div class="takeaways">
+      <ul>
+        <li>If it matters, use <code>@channel</code> — async readers deserve the info too.</li>
+        <li>If it doesn't matter, don't <code>@</code> anyone at all.</li>
+        <li><code>@here</code> is for the narrow case: real-time, ephemeral asks where only someone online <em>right now</em> can help.</li>
+      </ul>
+    </div>
+
+    <footer>A tiny educational app. No tracking, no backend, just one HTML file.</footer>
+  </main>
+
+  <script>
+    const SCENARIOS = [
+      {
+        q: "The deploy pipeline is broken and all PRs are blocked. You need to tell the engineering channel.",
+        correct: "channel",
+        why: {
+          channel: "Right call. This affects everyone, including teammates who are heads-down or AFK — they need to know before they push their next branch.",
+          here: "Tempting, but anyone AFK right now will come back, push a PR, and immediately hit the wall you just warned about. Use @channel.",
+          none: "This blocks the whole team's day. It deserves a ping — @channel is the right one."
+        }
+      },
+      {
+        q: "The weekly all-hands meeting starts in 5 minutes. You're posting in #general.",
+        correct: "channel",
+        why: {
+          channel: "Yes. People who stepped away to grab coffee still need to come back for the meeting — they're not 'gone,' just briefly idle.",
+          here: "Slack's 'active' status is fragile — someone who locked their laptop two minutes ago is 'away' and will miss this. @channel catches them.",
+          none: "A 5-minute warning is the whole point of the ping. @channel."
+        }
+      },
+      {
+        q: "The office is closing early due to a snowstorm — everyone should head home now.",
+        correct: "channel",
+        why: {
+          channel: "Correct. This is safety + logistics. Even people who are AFK right now will want to see this before they commute.",
+          here: "@here means the person who left their desk an hour ago doesn't get the message and walks into a closed office. Use @channel.",
+          none: "Weather + safety info needs everyone to see it, full stop. @channel."
+        }
+      },
+      {
+        q: "Announcing a new company-wide PTO policy that takes effect next month.",
+        correct: "channel",
+        why: {
+          channel: "Right. Everyone needs to read this, and nothing about it is real-time. Async readers matter most here.",
+          here: "Classic @here mistake. The colleague at lunch comes back, sees nothing, and is blindsided by the new policy in three weeks. Use @channel.",
+          none: "Policy changes need an announcement people can search for later. Use @channel."
+        }
+      },
+      {
+        q: "Production is down. You need an on-call SRE to jump into this thread within the next minute to debug.",
+        correct: "here",
+        why: {
+          here: "Correct — this is the narrow case @here was made for. Only someone online <em>right now</em> can help in the next 60 seconds; pinging the whole team adds noise without helping.",
+          channel: "Defensible, and many teams would do this. But pinging everyone — including people asleep or on PTO — adds noise when only currently-online responders can help. @here is the cleaner fit.",
+          none: "Production is on fire. You need a human in this thread immediately. Ping someone."
+        }
+      },
+      {
+        q: "\"Heads up: I'm pushing a hotfix to main in 2 minutes — speak now if you object.\"",
+        correct: "channel",
+        why: {
+          channel: "Right. This is the most common @here trap. Code-owners who are at lunch still own the code you're about to touch — they deserve a chance to object before, not a surprise after.",
+          here: "Feels right, but the teammate AFK for 20 minutes comes back to find their module rewritten. Give everyone a real chance to object — use @channel.",
+          none: "You're modifying shared code without warning. At minimum, @channel."
+        }
+      }
+    ];
+
+    const LABEL = { here: "@here", channel: "@channel", none: "Don't @ anyone" };
+
+    const quizEl = document.getElementById("quiz");
+    const scoreEl = document.getElementById("score");
+    const restartBtn = document.getElementById("restart");
+
+    let answered = 0;
+    let correct = 0;
+
+    function render() {
+      quizEl.innerHTML = "";
+      answered = 0;
+      correct = 0;
+      updateScore();
+      restartBtn.classList.remove("show");
+
+      SCENARIOS.forEach((s, i) => {
+        const card = document.createElement("div");
+        card.className = "scenario";
+        card.innerHTML = `
+          <p class="q"><span class="num">${i + 1}</span>${escapeHtml(s.q)}</p>
+          <div class="choices">
+            <button data-choice="here">@here</button>
+            <button data-choice="channel">@channel</button>
+            <button data-choice="none">Don't @ anyone</button>
+          </div>
+          <div class="feedback"></div>
+        `;
+        const buttons = card.querySelectorAll(".choices button");
+        const feedback = card.querySelector(".feedback");
+
+        buttons.forEach(btn => {
+          btn.addEventListener("click", () => {
+            const choice = btn.dataset.choice;
+            const isRight = choice === s.correct;
+
+            buttons.forEach(b => b.disabled = true);
+
+            if (isRight) {
+              btn.classList.add("correct");
+            } else {
+              btn.classList.add("wrong");
+              const rightBtn = card.querySelector(`button[data-choice="${s.correct}"]`);
+              rightBtn.classList.add("also-correct");
+            }
+
+            feedback.classList.add("show", isRight ? "right" : "wrong");
+            feedback.innerHTML = `<span class="verdict">${isRight ? "✓ Correct." : "✗ Not quite."}</span>${s.why[choice]}`;
+
+            answered++;
+            if (isRight) correct++;
+            updateScore();
+
+            if (answered === SCENARIOS.length) {
+              restartBtn.classList.add("show");
+            }
+          });
+        });
+
+        quizEl.appendChild(card);
+      });
+    }
+
+    function updateScore() {
+      scoreEl.textContent = `${correct} of ${answered}${answered === SCENARIOS.length ? " — done!" : ""}`;
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[c]);
+    }
+
+    restartBtn.addEventListener("click", () => {
+      render();
+      window.scrollTo({ top: document.querySelector(".quiz-header").offsetTop - 20, behavior: "smooth" });
+    });
+
+    render();
+  </script>
+</body>
+</html>

@@ -1,5 +1,58 @@
 # Build Log
 
+## 2026-05-25 — Re-skin to "Playful Arcade" design system
+
+**Prompt:** "Looks great, push" — rolling out the new Fairpoint design system.
+
+**Problem:** The quiz was clean but generic, and its engine was a hand-maintained copy of the same code duplicated across sibling sites (desync risk).
+
+**Solution:** Converted the site to the `fairpoint-kit` data-driven template. All content now lives in `spec.json` (40 scenarios, choices `here`/`channel`/`none`, copy, takeaways), rendered into `index.html`'s `#site-config` block via `fairpoint-kit/render.py`. New look: Space Grotesk headlines, neobrutalist cards, scoring HUD with 🔥combo + segmented progress, +points popups, count-up summary with a grade, dependency-free confetti at ≥70%. Scenarios and correctness are unchanged from the prior bank.
+
+**Key decisions:** Engine is no longer per-site code — it's the shared template; editing scenarios now means editing `spec.json` (the sync invariant is validated on render). CONTRIBUTING.md still applies but now points contributors at the `#site-config` block.
+
+**Changed files:** `index.html` (regenerated from template), `spec.json` (new)
+
+## 2026-05-11 — DNS settled, what we learned debugging it
+
+### Where things ended up
+- `dontuseathere.shop` and `www.dontuseathere.shop` both resolve correctly to `76.76.21.21` across all major resolvers.
+- Let's Encrypt cert issued and valid (`subject=CN=dontuseathere.shop`).
+- Total time from registering the domain + setting A/CNAME to fully-working HTTPS: roughly 4 days end-to-end, though the user-visible bumpy period (site flickers in/out from the browser) was only the first day.
+
+### What was actually happening
+Domain was registered Wed evening. A/CNAME records saved at Namecheap immediately. For the next ~24 hours the site would resolve sometimes and not others — looked like a transient outage. The cause:
+
+**Namecheap's authoritative nameservers were out of sync with each other for the fresh zone.** Specifically:
+- `dns2.registrar-servers.com` had the zone and returned `76.76.21.21`.
+- `dns1.registrar-servers.com` had nothing and returned REFUSED.
+
+Public resolvers (Cloudflare, Google, ISP) randomly load-balance across the listed authoritative NS. When a resolver happened to query dns2 it got the right answer and cached it; when it queried dns1 it got REFUSED. So the same browser would see the site work, then a few minutes later not work, depending on which NS its resolver hit and what the resolver did with the failure.
+
+### Diagnostic that nailed it
+Don't trust `dig +short <domain>` alone when DNS is misbehaving on a fresh domain. Query each authoritative NS directly:
+
+```bash
+for ns in dns1.registrar-servers.com dns2.registrar-servers.com; do
+  echo "= $ns ="
+  dig @$ns +short dontuseathere.shop A
+done
+```
+
+If you get different answers from different NS, the issue is registrar-side NS sync, not your records and not "propagation" in the normal sense. There's nothing to flush — you wait for the registrar to push the zone to all its NS.
+
+The other diagnostic that helped: DoH against Cloudflare and Google in parallel — they returned different statuses (Cloudflare: success, Google: REFUSED) at the same moment, which is a strong signal of NS-side inconsistency rather than client-side caching.
+
+### Why Vercel's cert took the whole window
+Vercel auto-issues a Let's Encrypt cert via the HTTP-01 challenge. It can't begin until DNS is *globally* resolvable, because LE's validation nodes are distributed and will fail the challenge if some can't resolve the domain. As long as resolvers were getting REFUSED from dns1, cert issuance silently waited. The cert showed up on its own once Namecheap finished syncing, with no action from us.
+
+### Lessons for next fresh-domain bring-up
+- **The first 1–24 hours of any newly-registered domain can look broken in inconsistent, confusing ways.** Don't change records, don't re-link Vercel, don't switch nameservers — just wait. Touching things in the middle of partial sync makes it harder to reason about what's broken.
+- **"DNS cache" is almost never the diagnosis on day one.** REFUSED isn't cached. The issue is authoritative NS sync, not client cache.
+- **Always have a stable fallback URL.** The Vercel project URL (`<project>.vercel.app`) worked continuously while the custom domain was flickering. That's what to share with anyone wanting to try the site during the bumpy window — never hand out a custom-domain URL to others until DNS is fully settled and the cert is issued.
+- **Don't panic when one resolver says yes and another says no** — that's NS sync, not a bug. Confirm by querying the authoritative NS directly.
+
+---
+
 ## 2026-05-07 — v0.1: initial app, ship, expand to 40 scenarios
 
 ### Original prompt

@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fairpoint</title>
+  <meta name="description" content="" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       SITE CONFIG — the ONLY thing that changes between Fairpoint sites.
+       Rendered by slack-mentions-quiz/build.py from spec.json.
+       NOTE: this is the dontuseathere "no-score" variant of the kit
+       template — endless one-at-a-time, no HUD / score / summary.
+       Score-related spec fields (pointsPerCorrect, comboStep,
+       breakdownLabels) are accepted but ignored here.
+       ════════════════════════════════════════════════════════════════ -->
+  <script type="application/json" id="site-config">
+{
+  "slug": "example",
+  "subdomain": "example",
+  "repo": "example",
+  "title": "Fairpoint quiz",
+  "metaDescription": "A tiny opinionated quiz.",
+  "h1": "Fairpoint quiz",
+  "thesis": "Replace this with the one-line thesis. <code>Inline code</code> and <em>emphasis</em> are allowed.",
+  "explainerHeading": "The 30-second explainer",
+  "explainer": [
+    { "h3": "Option one", "accent": "--purple-electric", "body": "What this option does." },
+    { "h3": "Option two", "accent": "--coral", "body": "What that option does." }
+  ],
+  "trap": "<strong>The trap:</strong> why the tempting-but-wrong choice feels right and isn't.",
+  "quizHeading": "Quiz: which would you pick?",
+  "choices": [
+    { "key": "good", "label": "The right call", "accent": "--purple-electric" },
+    { "key": "bad", "label": "The tempting trap", "accent": "--coral" },
+    { "key": "none", "label": "Do nothing", "accent": "--muted" }
+  ],
+  "breakdownLabels": { "good": "right call", "bad": "the trap", "none": "do nothing" },
+  "pointsPerCorrect": 100,
+  "comboStep": 1,
+  "scenarios": [
+    {
+      "q": "Replace with a one-sentence scenario.",
+      "correct": "good",
+      "why": {
+        "good": "Why the right call is right.",
+        "bad": "Why the trap fails — name the failure mode.",
+        "none": "Why doing nothing is wrong here."
+      }
+    }
+  ],
+  "takeaways": [
+    "First takeaway.",
+    "Second takeaway."
+  ],
+  "footer": {
+    "crossPromo": "https://fairpoint.website",
+    "repoUrl": "https://github.com/Paulfrazier/example"
+  }
+}
+  </script>
+
+  <style>
+    :root {
+      /* ── Playful arcade tokens (source of truth: fairpoint-kit/DESIGN.md) ── */
+      --purple: #4A154B;            /* deep anchor — headings, ink-on-light */
+      --purple-electric: #6D28D9;   /* primary interactive */
+      --lime: #84CC16;              /* correct */
+      --lime-ink: #3f6212;          /* readable lime text on light */
+      --coral: #FB5D3C;             /* wrong */
+      --gold: #ECB22E;              /* legacy accent */
+      --ink: #1d1c1d;
+      --paper: #FBFAFF;
+      --card: #ffffff;
+      --muted: #696969;
+      --border: #e6e6e6;
+      --lime-tint: #f1fae3;
+      --coral-tint: #fdece8;
+      --shadow: 4px 4px 0 var(--ink);
+      --shadow-lg: 6px 6px 0 var(--ink);
+      --radius: 14px;
+      --bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background:
+        radial-gradient(circle at 12% 8%, rgba(109,40,217,0.06), transparent 40%),
+        radial-gradient(circle at 88% 0%, rgba(251,93,60,0.06), transparent 38%),
+        var(--paper);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+    }
+
+    .display {
+      font-family: "Space Grotesk", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 28px 20px 80px;
+    }
+
+    h1 {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 44px;
+      font-weight: 700;
+      margin: 8px 0 10px;
+      color: var(--purple);
+      letter-spacing: -0.02em;
+      line-height: 1.02;
+    }
+
+    .thesis {
+      font-size: 19px;
+      color: var(--ink);
+      margin: 0 0 28px;
+    }
+
+    h2 {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin: 40px 0 16px;
+      color: var(--purple);
+      letter-spacing: -0.01em;
+    }
+
+    code {
+      background: #efe9f7;
+      padding: 1px 6px;
+      border-radius: 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.9em;
+    }
+
+    /* ── Explainer cards ── */
+    .explainer {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .def {
+      background: var(--card);
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow);
+    }
+    .def h3 {
+      font-family: "Space Grotesk", sans-serif;
+      margin: 0 0 6px;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .def p { margin: 0; color: var(--muted); font-size: 14px; }
+
+    .trap {
+      background: #fff7ed;
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-size: 14.5px;
+      box-shadow: var(--shadow);
+    }
+    .trap strong { color: var(--coral); }
+
+    /* ── Scenario card ── */
+    .scenario {
+      background: var(--card);
+      border: 2px solid var(--ink);
+      border-radius: var(--radius);
+      padding: 24px 22px;
+      box-shadow: var(--shadow-lg);
+    }
+    .scenario.shake { animation: shake 0.4s; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-7px); }
+      40% { transform: translateX(7px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+    .scenario .q {
+      font-size: 18px;
+      margin: 0 0 18px;
+      line-height: 1.45;
+      font-weight: 500;
+    }
+
+    /* ── Chunky choice buttons ── */
+    .choices {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .choices button {
+      flex: 1 1 auto;
+      padding: 14px 16px;
+      border: 2px solid var(--ink);
+      background: #fff;
+      border-radius: 12px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 14.5px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform 0.12s var(--bounce), box-shadow 0.12s, background 0.15s;
+    }
+    .choices button:hover:not(:disabled) {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--ink);
+    }
+    .choices button:active:not(:disabled) {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--ink);
+    }
+    .choices button:focus-visible {
+      outline: 3px solid var(--purple-electric);
+      outline-offset: 2px;
+    }
+    .choices button.correct {
+      background: var(--lime);
+      color: var(--ink);
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .choices button.wrong {
+      background: var(--coral);
+      color: #fff;
+      box-shadow: 3px 3px 0 var(--ink);
+    }
+    .choices button.reveal-correct {
+      background: var(--lime-tint);
+      color: var(--lime-ink);
+    }
+    .choices button:disabled { cursor: default; }
+
+    /* ── Feedback ── */
+    .feedback {
+      margin-top: 16px;
+      padding: 13px 16px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      border: 2px solid var(--ink);
+      display: none;
+    }
+    .feedback.show { display: block; animation: pop 0.3s var(--bounce); }
+    @keyframes pop {
+      from { transform: scale(0.96); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .feedback.right { background: var(--lime-tint); }
+    .feedback.wrong { background: var(--coral-tint); }
+    .feedback .verdict { font-weight: 700; margin-right: 4px; font-family: "Space Grotesk", sans-serif; }
+
+    /* ── Nav ── */
+    .nav { display: flex; justify-content: flex-end; margin-top: 16px; }
+    .nav button {
+      padding: 12px 26px;
+      background: var(--purple-electric);
+      color: #fff;
+      border: 2px solid var(--ink);
+      border-radius: 12px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 var(--ink);
+      transition: transform 0.12s var(--bounce), box-shadow 0.12s;
+    }
+    .nav button:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0 var(--ink);
+    }
+    .nav button:active {
+      transform: translate(3px, 3px);
+      box-shadow: 0 0 0 var(--ink);
+    }
+
+    .submit-cta {
+      margin-top: 16px;
+      padding: 14px 18px;
+      background: #f3eefc;
+      border: 2px dashed var(--purple-electric);
+      border-radius: 12px;
+      font-size: 14px;
+    }
+    .submit-cta a { color: var(--purple-electric); font-weight: 700; text-decoration: none; }
+    .submit-cta a:hover { text-decoration: underline; }
+
+    .takeaways ul { padding-left: 20px; }
+    .takeaways li { margin-bottom: 8px; }
+
+    footer {
+      margin-top: 52px;
+      font-size: 13px;
+      color: var(--muted);
+      text-align: center;
+    }
+    footer .fairpoint { margin-bottom: 6px; }
+    footer .fairpoint a, footer .repo a {
+      color: var(--purple-electric);
+      font-weight: 600;
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+
+    #confetti {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 50;
+      display: none;
+    }
+
+    @media (max-width: 540px) {
+      .wrap { padding: 20px 16px 60px; }
+      h1 { font-size: 34px; }
+      .thesis { font-size: 17px; }
+      .explainer { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="confetti"></canvas>
+  <main class="wrap">
+    <header>
+      <h1 id="h1"></h1>
+      <p class="thesis" id="thesis"></p>
+    </header>
+
+    <h2 id="explainer-heading"></h2>
+    <div class="explainer" id="explainer"></div>
+    <div class="trap" id="trap"></div>
+
+    <h2 id="quiz-heading"></h2>
+    <div id="quiz"></div>
+
+    <div class="submit-cta" id="submit-cta"></div>
+
+    <h2>Takeaways</h2>
+    <div class="takeaways"><ul id="takeaways"></ul></div>
+
+    <footer>
+      <div class="fairpoint">More from <a id="cross-promo" href="#" target="_blank" rel="noopener">Fairpoint →</a></div>
+      <span class="repo">A tiny educational app. <a id="repo-link" href="#" target="_blank" rel="noopener">Source on GitHub</a>.</span>
+    </footer>
+  </main>
+
+  <script>
+    // ── Load config ──────────────────────────────────────────────────
+    const CFG = JSON.parse(document.getElementById("site-config").textContent);
+    const SCENARIOS = CFG.scenarios;
+    const CHOICES = CFG.choices;
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      })[c]);
+    }
+    function accentVar(a) { return a && a.startsWith("--") ? `var(${a})` : (a || "var(--ink)"); }
+
+    // ── Static chrome from config ────────────────────────────────────
+    document.title = CFG.title;
+    document.querySelector('meta[name="description"]').setAttribute("content", CFG.metaDescription || "");
+    document.getElementById("h1").textContent = CFG.h1;
+    document.getElementById("thesis").innerHTML = CFG.thesis;                 // trusted (author copy)
+    document.getElementById("explainer-heading").textContent = CFG.explainerHeading || "The 30-second explainer";
+    document.getElementById("trap").innerHTML = CFG.trap;                     // trusted
+    document.getElementById("quiz-heading").textContent = CFG.quizHeading || "Quiz";
+
+    document.getElementById("explainer").replaceChildren(...(CFG.explainer || []).map(e => {
+      const div = document.createElement("div");
+      div.className = "def";
+      const h3 = document.createElement("h3");
+      h3.textContent = e.h3;
+      h3.style.color = accentVar(e.accent);
+      const p = document.createElement("p");
+      p.innerHTML = e.body;                                                   // trusted
+      div.append(h3, p);
+      return div;
+    }));
+
+    document.getElementById("takeaways").replaceChildren(...(CFG.takeaways || []).map(t => {
+      const li = document.createElement("li");
+      li.innerHTML = t;                                                       // trusted
+      return li;
+    }));
+
+    if (CFG.footer?.repoUrl) {
+      const contribUrl = CFG.footer.repoUrl.replace(/\/$/, "") + "/blob/main/CONTRIBUTING.md";
+      document.getElementById("submit-cta").innerHTML =
+        `Got a good scenario? <a href="${escapeHtml(contribUrl)}" target="_blank" rel="noopener">Submit one as a PR →</a>`;
+      document.getElementById("repo-link").href = CFG.footer.repoUrl;
+    }
+    if (CFG.footer?.crossPromo) document.getElementById("cross-promo").href = CFG.footer.crossPromo;
+
+    // ── Per-choice accent colors (generated, not hard-coded selectors) ──
+    const styleEl = document.createElement("style");
+    styleEl.textContent = CHOICES.map(c =>
+      `.choices button[data-choice="${c.key}"]{color:${accentVar(c.accent)};}` +
+      `.choices button[data-choice="${c.key}"].correct,` +
+      `.choices button[data-choice="${c.key}"].wrong{color:inherit;}`
+    ).join("\n");
+    document.head.appendChild(styleEl);
+
+    // ── State: an endless shuffled deck, no score ────────────────────
+    const quizEl = document.getElementById("quiz");
+    const quizHeadingEl = document.getElementById("quiz-heading");
+
+    let deck = [], pos = 0;
+
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    function start() {
+      deck = shuffle([...Array(SCENARIOS.length).keys()]);
+      pos = 0;
+      renderQuestion();
+    }
+
+    function advance() {
+      pos++;
+      if (pos >= deck.length) {
+        // Reshuffle for another endless pass; avoid an immediate repeat
+        // of the card the user just saw as the new first card.
+        const last = deck[deck.length - 1];
+        deck = shuffle([...Array(SCENARIOS.length).keys()]);
+        if (SCENARIOS.length > 1 && deck[0] === last) {
+          [deck[0], deck[1]] = [deck[1], deck[0]];
+        }
+        pos = 0;
+      }
+      renderQuestion();
+      scrollToQuiz();
+    }
+
+    function renderQuestion() {
+      const s = SCENARIOS[deck[pos]];
+      const card = document.createElement("div");
+      card.className = "scenario";
+      card.style.position = "relative";
+
+      const choiceBtns = CHOICES.map(c =>
+        `<button data-choice="${escapeHtml(c.key)}">${escapeHtml(c.label)}</button>`
+      ).join("");
+
+      card.innerHTML = `
+        <p class="q">${escapeHtml(s.q)}</p>
+        <div class="choices">${choiceBtns}</div>
+        <div class="feedback"></div>
+        <div class="nav" style="display:none"><button id="next-btn">Next →</button></div>
+      `;
+
+      const buttons = card.querySelectorAll(".choices button");
+      const feedback = card.querySelector(".feedback");
+      const nav = card.querySelector(".nav");
+
+      buttons.forEach(btn => {
+        btn.addEventListener("click", () => {
+          const choice = btn.dataset.choice;
+          const isRight = choice === s.correct;
+          buttons.forEach(b => b.disabled = true);
+
+          if (isRight) {
+            btn.classList.add("correct");
+            burst(btn);
+          } else {
+            btn.classList.add("wrong");
+            card.classList.add("shake");
+            setTimeout(() => card.classList.remove("shake"), 400);
+            const rightBtn = card.querySelector(`button[data-choice="${CSS.escape(s.correct)}"]`);
+            if (rightBtn) rightBtn.classList.add("reveal-correct");
+          }
+
+          feedback.classList.add("show", isRight ? "right" : "wrong");
+          feedback.innerHTML = `<span class="verdict">${isRight ? "✓ Correct." : "✗ Not quite."}</span>${s.why[choice]}`; // trusted
+          nav.style.display = "flex";
+          card.querySelector("#next-btn").focus();
+        });
+      });
+
+      card.querySelector("#next-btn").addEventListener("click", advance);
+      quizEl.replaceChildren(card);
+    }
+
+    function scrollToQuiz() {
+      window.scrollTo({ top: quizHeadingEl.offsetTop - 12, behavior: "smooth" });
+    }
+
+    // ── Tiny dependency-free confetti — a light pop on a correct answer ──
+    function burst(btn) {
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      const canvas = document.getElementById("confetti");
+      const ctx = canvas.getContext("2d");
+      const dpr = window.devicePixelRatio || 1;
+      canvas.style.display = "block";
+      canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const r = btn.getBoundingClientRect();
+      const ox = r.left + r.width / 2, oy = r.top + r.height / 2;
+      const colors = ["#6D28D9", "#84CC16", "#FB5D3C", "#ECB22E", "#4A154B"];
+      const parts = Array.from({ length: 46 }, () => ({
+        x: ox, y: oy,
+        vx: (Math.random() - 0.5) * 11, vy: Math.random() * -9 - 3,
+        s: Math.random() * 6 + 3, c: colors[Math.floor(Math.random() * colors.length)],
+        rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3
+      }));
+      const t0 = performance.now();
+      (function frame(now) {
+        const elapsed = now - t0;
+        ctx.clearRect(0, 0, innerWidth, innerHeight);
+        parts.forEach(p => {
+          p.vy += 0.34; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+          ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+          ctx.restore();
+        });
+        if (elapsed < 1100) requestAnimationFrame(frame);
+        else { ctx.clearRect(0, 0, innerWidth, innerHeight); canvas.style.display = "none"; }
+      })(t0);
+    }
+
+    // ── Keyboard support: 1..N to answer, Enter for the next scenario ──
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        const next = document.getElementById("next-btn");
+        if (next && next.offsetParent !== null) next.click();
+        return;
+      }
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= CHOICES.length) {
+        const btns = quizEl.querySelectorAll(".choices button");
+        if (btns[n - 1] && !btns[n - 1].disabled) btns[n - 1].click();
+      }
+    });
+
+    start();
+  </script>
+</body>
+</html>

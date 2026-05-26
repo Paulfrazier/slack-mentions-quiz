@@ -11,8 +11,11 @@
 
   <!-- ════════════════════════════════════════════════════════════════
        SITE CONFIG — the ONLY thing that changes between Fairpoint sites.
-       The orchestrator (/fairpoint) or a re-skin replaces this block.
-       Everything below renders from it. See fairpoint-kit/spec.schema.json.
+       Rendered by slack-mentions-quiz/build.py from spec.json.
+       NOTE: this is the dontuseathere "no-score" variant of the kit
+       template — endless one-at-a-time, no HUD / score / summary.
+       Score-related spec fields (pointsPerCorrect, comboStep,
+       breakdownLabels) are accepted but ignored here.
        ════════════════════════════════════════════════════════════════ -->
   <script type="application/json" id="site-config">
 {
@@ -441,10 +444,10 @@
       /* ── Playful arcade tokens (source of truth: fairpoint-kit/DESIGN.md) ── */
       --purple: #4A154B;            /* deep anchor — headings, ink-on-light */
       --purple-electric: #6D28D9;   /* primary interactive */
-      --lime: #84CC16;              /* correct / points */
+      --lime: #84CC16;              /* correct */
       --lime-ink: #3f6212;          /* readable lime text on light */
-      --coral: #FB5D3C;             /* wrong / combo heat */
-      --gold: #ECB22E;              /* legacy accent / streak flame */
+      --coral: #FB5D3C;             /* wrong */
+      --gold: #ECB22E;              /* legacy accent */
       --ink: #1d1c1d;
       --paper: #FBFAFF;
       --card: #ffffff;
@@ -547,73 +550,6 @@
     }
     .trap strong { color: var(--coral); }
 
-    /* ── Arcade HUD ── */
-    .hud {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin: 38px 0 14px;
-      padding: 12px 16px;
-      background: var(--purple);
-      border: 2px solid var(--ink);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      color: #fff;
-    }
-    .hud .score-block {
-      display: flex;
-      flex-direction: column;
-      line-height: 1.05;
-    }
-    .hud .score-label {
-      font-size: 10px;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #d7c4d8;
-    }
-    .hud .score-value {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 26px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-    }
-    .hud .combo {
-      font-family: "Space Grotesk", sans-serif;
-      font-weight: 700;
-      font-size: 14px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: var(--coral);
-      color: #fff;
-      opacity: 0;
-      transform: scale(0.6);
-      transition: opacity 0.2s, transform 0.25s var(--bounce);
-      white-space: nowrap;
-    }
-    .hud .combo.show { opacity: 1; transform: scale(1); }
-    .hud .seg {
-      display: flex;
-      gap: 4px;
-      margin-left: auto;
-      flex: 1 1 auto;
-      justify-content: flex-end;
-      max-width: 55%;
-      flex-wrap: wrap;
-    }
-    .hud .seg i {
-      flex: 1 1 6px;
-      max-width: 16px;
-      height: 8px;
-      border-radius: 3px;
-      background: rgba(255,255,255,0.22);
-      transition: background 0.25s;
-    }
-    .hud .seg i.done { background: var(--lime); }
-    .hud .seg i.current { background: #fff; }
-
     /* ── Scenario card ── */
     .scenario {
       background: var(--card);
@@ -702,26 +638,9 @@
     .feedback.wrong { background: var(--coral-tint); }
     .feedback .verdict { font-weight: 700; margin-right: 4px; font-family: "Space Grotesk", sans-serif; }
 
-    /* ── +points popup ── */
-    .points-pop {
-      position: absolute;
-      font-family: "Space Grotesk", sans-serif;
-      font-weight: 700;
-      font-size: 22px;
-      color: var(--lime-ink);
-      pointer-events: none;
-      animation: floatUp 0.9s ease-out forwards;
-      z-index: 30;
-    }
-    @keyframes floatUp {
-      0% { transform: translateY(0); opacity: 0; }
-      15% { opacity: 1; }
-      100% { transform: translateY(-46px); opacity: 0; }
-    }
-
     /* ── Nav ── */
     .nav { display: flex; justify-content: flex-end; margin-top: 16px; }
-    .nav button, .summary button {
+    .nav button {
       padding: 12px 26px;
       background: var(--purple-electric);
       color: #fff;
@@ -734,46 +653,13 @@
       box-shadow: 3px 3px 0 var(--ink);
       transition: transform 0.12s var(--bounce), box-shadow 0.12s;
     }
-    .nav button:hover, .summary button:hover {
+    .nav button:hover {
       transform: translate(-2px, -2px);
       box-shadow: 5px 5px 0 var(--ink);
     }
-    .nav button:active, .summary button:active {
+    .nav button:active {
       transform: translate(3px, 3px);
       box-shadow: 0 0 0 var(--ink);
-    }
-
-    /* ── Summary ── */
-    .summary {
-      background: var(--card);
-      border: 2px solid var(--ink);
-      border-radius: var(--radius);
-      padding: 32px 24px;
-      text-align: center;
-      box-shadow: var(--shadow-lg);
-    }
-    .summary .big-score {
-      font-family: "Space Grotesk", sans-serif;
-      font-size: 56px;
-      font-weight: 700;
-      color: var(--purple-electric);
-      font-variant-numeric: tabular-nums;
-      line-height: 1;
-      margin: 0 0 4px;
-    }
-    .summary .pct { font-size: 16px; color: var(--muted); margin: 0 0 6px; }
-    .summary .final-score { font-size: 18px; margin: 0 0 10px; }
-    .summary .breakdown { font-size: 14px; color: var(--muted); margin: 0 0 22px; }
-    .summary .grade {
-      display: inline-block;
-      font-family: "Space Grotesk", sans-serif;
-      font-weight: 700;
-      font-size: 14px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      border: 2px solid var(--ink);
-      background: var(--lime);
-      margin: 0 0 18px;
     }
 
     .submit-cta {
@@ -819,7 +705,6 @@
       h1 { font-size: 34px; }
       .thesis { font-size: 17px; }
       .explainer { grid-template-columns: 1fr; }
-      .hud .seg { max-width: 100%; }
     }
     @media (prefers-reduced-motion: reduce) {
       * { animation: none !important; transition: none !important; }
@@ -837,15 +722,6 @@
     <h2 id="explainer-heading"></h2>
     <div class="explainer" id="explainer"></div>
     <div class="trap" id="trap"></div>
-
-    <div class="hud" id="hud">
-      <div class="score-block">
-        <span class="score-label">Score</span>
-        <span class="score-value" id="score">0</span>
-      </div>
-      <span class="combo" id="combo">🔥 ×1</span>
-      <div class="seg" id="seg"></div>
-    </div>
 
     <h2 id="quiz-heading"></h2>
     <div id="quiz"></div>
@@ -866,8 +742,6 @@
     const CFG = JSON.parse(document.getElementById("site-config").textContent);
     const SCENARIOS = CFG.scenarios;
     const CHOICES = CFG.choices;
-    const POINTS = CFG.pointsPerCorrect ?? 100;
-    const COMBO_STEP = CFG.comboStep ?? 1;
 
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, c => ({
@@ -920,16 +794,12 @@
     ).join("\n");
     document.head.appendChild(styleEl);
 
-    // ── State ────────────────────────────────────────────────────────
+    // ── State: an endless shuffled deck, no score ────────────────────
     const quizEl = document.getElementById("quiz");
-    const scoreEl = document.getElementById("score");
-    const comboEl = document.getElementById("combo");
-    const segEl = document.getElementById("seg");
-    const hudEl = document.getElementById("hud");
+    const quizHeadingEl = document.getElementById("quiz-heading");
 
-    let order = [], idx = 0, correct = 0, score = 0, streak = 0, byCorrect = {};
+    let deck = [], pos = 0;
 
-    function freshTally() { return Object.fromEntries(CHOICES.map(c => [c.key, 0])); }
     function shuffle(a) {
       for (let i = a.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -938,49 +808,30 @@
       return a;
     }
 
-    function buildSegments() {
-      segEl.replaceChildren(...SCENARIOS.map(() => document.createElement("i")));
-    }
-    function updateSegments() {
-      [...segEl.children].forEach((s, i) => {
-        s.className = i < idx ? "done" : (i === idx ? "current" : "");
-      });
-    }
-    function setCombo() {
-      const mult = comboMultiplier();
-      if (streak >= 2) {
-        comboEl.textContent = `🔥 ×${mult}`;
-        comboEl.classList.add("show");
-      } else {
-        comboEl.classList.remove("show");
-      }
-    }
-    function comboMultiplier() { return Math.max(1, 1 + (streak - 1) * COMBO_STEP); }
-
-    function animateScore(to) {
-      const from = parseInt(scoreEl.textContent.replace(/\D/g, ""), 10) || 0;
-      const start = performance.now(), dur = 500;
-      function tick(now) {
-        const p = Math.min(1, (now - start) / dur);
-        scoreEl.textContent = Math.round(from + (to - from) * p).toLocaleString();
-        if (p < 1) requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-    }
-
-    function startQuiz() {
-      order = shuffle([...Array(SCENARIOS.length).keys()]);
-      idx = 0; correct = 0; score = 0; streak = 0; byCorrect = freshTally();
-      scoreEl.textContent = "0";
-      comboEl.classList.remove("show");
-      buildSegments();
+    function start() {
+      deck = shuffle([...Array(SCENARIOS.length).keys()]);
+      pos = 0;
       renderQuestion();
     }
 
+    function advance() {
+      pos++;
+      if (pos >= deck.length) {
+        // Reshuffle for another endless pass; avoid an immediate repeat
+        // of the card the user just saw as the new first card.
+        const last = deck[deck.length - 1];
+        deck = shuffle([...Array(SCENARIOS.length).keys()]);
+        if (SCENARIOS.length > 1 && deck[0] === last) {
+          [deck[0], deck[1]] = [deck[1], deck[0]];
+        }
+        pos = 0;
+      }
+      renderQuestion();
+      scrollToQuiz();
+    }
+
     function renderQuestion() {
-      updateSegments();
-      const s = SCENARIOS[order[idx]];
-      const last = idx === SCENARIOS.length - 1;
+      const s = SCENARIOS[deck[pos]];
       const card = document.createElement("div");
       card.className = "scenario";
       card.style.position = "relative";
@@ -993,7 +844,7 @@
         <p class="q">${escapeHtml(s.q)}</p>
         <div class="choices">${choiceBtns}</div>
         <div class="feedback"></div>
-        <div class="nav" style="display:none"><button id="next-btn">${last ? "See results →" : "Next →"}</button></div>
+        <div class="nav" style="display:none"><button id="next-btn">Next →</button></div>
       `;
 
       const buttons = card.querySelectorAll(".choices button");
@@ -1008,16 +859,9 @@
 
           if (isRight) {
             btn.classList.add("correct");
-            correct++; streak++; byCorrect[s.correct]++;
-            const gained = POINTS * comboMultiplier();
-            score += gained;
-            animateScore(score);
-            setCombo();
-            popPoints(btn, gained);
+            burst(btn);
           } else {
             btn.classList.add("wrong");
-            streak = 0;
-            setCombo();
             card.classList.add("shake");
             setTimeout(() => card.classList.remove("shake"), 400);
             const rightBtn = card.querySelector(`button[data-choice="${CSS.escape(s.correct)}"]`);
@@ -1027,87 +871,34 @@
           feedback.classList.add("show", isRight ? "right" : "wrong");
           feedback.innerHTML = `<span class="verdict">${isRight ? "✓ Correct." : "✗ Not quite."}</span>${s.why[choice]}`; // trusted
           nav.style.display = "flex";
+          card.querySelector("#next-btn").focus();
         });
       });
 
-      card.querySelector("#next-btn").addEventListener("click", () => {
-        idx++;
-        if (idx >= SCENARIOS.length) renderSummary();
-        else { renderQuestion(); scrollToQuiz(); }
-      });
-
+      card.querySelector("#next-btn").addEventListener("click", advance);
       quizEl.replaceChildren(card);
-    }
-
-    function popPoints(btn, amount) {
-      const card = btn.closest(".scenario");
-      const pop = document.createElement("div");
-      pop.className = "points-pop";
-      pop.textContent = `+${amount.toLocaleString()}`;
-      pop.style.left = (btn.offsetLeft + btn.offsetWidth / 2 - 20) + "px";
-      pop.style.top = (btn.offsetTop - 10) + "px";
-      card.appendChild(pop);
-      setTimeout(() => pop.remove(), 900);
-    }
-
-    function gradeFor(pct) {
-      if (pct >= 90) return { label: "Slack sensei 🥷", bg: "var(--lime)" };
-      if (pct >= 70) return { label: "Solid etiquette ✓", bg: "var(--lime)" };
-      if (pct >= 50) return { label: "Getting there", bg: "var(--gold)" };
-      return { label: "Room to grow", bg: "var(--coral)" };
-    }
-
-    function renderSummary() {
-      updateSegments();
-      [...segEl.children].forEach(s => s.className = "done");
-      const pct = Math.round((correct / SCENARIOS.length) * 100);
-      const grade = gradeFor(pct);
-      const breakdown = CHOICES
-        .map(c => `${(CFG.breakdownLabels?.[c.key]) || c.label}: ${byCorrect[c.key]}`)
-        .join(" · ");
-
-      const card = document.createElement("div");
-      card.className = "summary";
-      card.innerHTML = `
-        <div class="big-score" id="sum-score">0</div>
-        <p class="pct">points · ${pct}% correct</p>
-        <span class="grade" style="background:${grade.bg}">${grade.label}</span>
-        <p class="final-score">You got <strong>${correct}</strong> of ${SCENARIOS.length} right.</p>
-        <p class="breakdown">Correct by choice — ${escapeHtml(breakdown)}</p>
-        <button id="restart-btn">Play again ↺</button>
-      `;
-      quizEl.replaceChildren(card);
-
-      // count-up the final score
-      const target = score, el = card.querySelector("#sum-score");
-      const start = performance.now(), dur = 900;
-      (function tick(now) {
-        const p = Math.min(1, (now - start) / dur);
-        el.textContent = Math.round(target * p).toLocaleString();
-        if (p < 1) requestAnimationFrame(tick);
-      })(performance.now());
-
-      card.querySelector("#restart-btn").addEventListener("click", () => { startQuiz(); scrollToQuiz(); });
-      if (pct >= 70) fireConfetti();
     }
 
     function scrollToQuiz() {
-      window.scrollTo({ top: hudEl.offsetTop - 8, behavior: "smooth" });
+      window.scrollTo({ top: quizHeadingEl.offsetTop - 12, behavior: "smooth" });
     }
 
-    // ── Tiny dependency-free confetti ────────────────────────────────
-    function fireConfetti() {
+    // ── Tiny dependency-free confetti — a light pop on a correct answer ──
+    function burst(btn) {
+      if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       const canvas = document.getElementById("confetti");
       const ctx = canvas.getContext("2d");
       const dpr = window.devicePixelRatio || 1;
       canvas.style.display = "block";
       canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
-      ctx.scale(dpr, dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const r = btn.getBoundingClientRect();
+      const ox = r.left + r.width / 2, oy = r.top + r.height / 2;
       const colors = ["#6D28D9", "#84CC16", "#FB5D3C", "#ECB22E", "#4A154B"];
-      const parts = Array.from({ length: 130 }, () => ({
-        x: innerWidth / 2, y: innerHeight / 3,
-        vx: (Math.random() - 0.5) * 14, vy: Math.random() * -12 - 4,
-        s: Math.random() * 7 + 4, c: colors[Math.floor(Math.random() * colors.length)],
+      const parts = Array.from({ length: 46 }, () => ({
+        x: ox, y: oy,
+        vx: (Math.random() - 0.5) * 11, vy: Math.random() * -9 - 3,
+        s: Math.random() * 6 + 3, c: colors[Math.floor(Math.random() * colors.length)],
         rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3
       }));
       const t0 = performance.now();
@@ -1115,23 +906,21 @@
         const elapsed = now - t0;
         ctx.clearRect(0, 0, innerWidth, innerHeight);
         parts.forEach(p => {
-          p.vy += 0.32; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+          p.vy += 0.34; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
           ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
           ctx.fillStyle = p.c; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
           ctx.restore();
         });
-        if (elapsed < 2600) requestAnimationFrame(frame);
+        if (elapsed < 1100) requestAnimationFrame(frame);
         else { ctx.clearRect(0, 0, innerWidth, innerHeight); canvas.style.display = "none"; }
       })(t0);
     }
 
-    // ── Keyboard support: 1..9 to answer, Enter to advance ───────────
+    // ── Keyboard support: 1..N to answer, Enter for the next scenario ──
     document.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         const next = document.getElementById("next-btn");
-        if (next && next.offsetParent !== null) { next.click(); return; }
-        const restart = document.getElementById("restart-btn");
-        if (restart) restart.click();
+        if (next && next.offsetParent !== null) next.click();
         return;
       }
       const n = parseInt(e.key, 10);
@@ -1141,7 +930,7 @@
       }
     });
 
-    startQuiz();
+    start();
   </script>
 </body>
 </html>

@@ -1,5 +1,21 @@
 # Build Log
 
+## 2026-05-26 — Redesign to "click → result" (no-score endless variant)
+
+**Prompt:** "lets redesign the quiz for fairpoint use dontuseathere as the test, thinking do away with keep score and showing user their are 40+ want it to be fast and light wait. click, get result. fun and easy."
+
+**Problem:** The scored arcade flow made the quiz feel like a graded grind. The sticky HUD's segmented progress bar literally counted out all 40 scenarios up front (the "there are 40+" reveal), and the score/combo/grade machinery added weight to what should be a quick, fun "click → see why → next" loop.
+
+**Solution:** Built a **dontuseathere-only variant** of the Fairpoint quiz with no scoring. The shared `fairpoint-kit` is left untouched — this is a test-first divergence. `spec.json` stays the single source of truth (its `pointsPerCorrect`/`comboStep`/`breakdownLabels` fields are simply ignored by the variant). New flow: land directly on a scenario → click an answer → instant verdict (✓/✗ + the "why") → **Next →** pulls a fresh random scenario, forever. No HUD, no score, no combo, no progress segments, no summary/grade screen. The deck is a shuffled list of all scenarios; when exhausted it reshuffles (avoiding an immediate repeat) and continues endlessly — the count is never shown. Kept the full editorial intro (h1, thesis, explainer cards, trap) and takeaways, the neobrutalist scenario card, wrong-answer shake + correct reveal, and keyboard play (1–N to answer, Enter to advance). Confetti is retained but lightened to a small per-answer burst on **correct** only, anchored at the clicked button, and skipped under `prefers-reduced-motion`.
+
+**Mechanics:** `render.py` hardcodes the kit template and takes no template arg, so a local `build.py` reuses the kit's `validate()` + `ISLAND` regex (choice-sync invariant still enforced) but injects `spec.json` into a local `template.html` instead of the kit's. Rebuild with `bash build.sh`. To promote this design kit-wide later, diff `slack-mentions-quiz/template.html` → `fairpoint-kit/template.html`.
+
+**Key decisions:** No new color tokens (reused DESIGN.md vars). Variant kept fully spec-compatible with the stock kit so we can revert by re-rendering through `render.py`. Confetti kept (lightly) rather than removed, since "fun" was an explicit goal — a one-line follow-up can drop it if undesired.
+
+**Verified** (gstack headless): no console errors; no `.hud`/`#score`/`#seg`/`#combo` in DOM; scenario renders on load; wrong → coral+shake+reveal+"✗ Not quite.", correct → lime+"✓ Correct."+burst; 45 consecutive Next clicks never produced a summary and always advanced; keyboard 1/Enter works; mobile collapses to single column.
+
+**Changed files:** `template.html` (new, local variant), `build.py` (new), `build.sh` (new), `index.html` (regenerated). `spec.json` content unchanged; `fairpoint-kit/*` untouched.
+
 ## 2026-05-25 — Re-skin to "Playful Arcade" design system
 
 **Prompt:** "Looks great, push" — rolling out the new Fairpoint design system.
